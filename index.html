@@ -3,170 +3,225 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Hotel - Cloud IoT Panel</title>
+    <title>Smart Hotel Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #1a1a2e; color: #e0e0e0; margin: 0; padding: 20px; }
-        
-        /* 標題欄設定 */
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f3460; padding-bottom: 15px; margin-bottom: 30px; }
-        .header-left { display: flex; align-items: center; gap: 15px; } /* 控制左上角 ESP32 圖片與文字的排版 */
-        .header h1 { margin: 0; color: #e94560; display: flex; align-items: center; font-size: 28px;}
-        .header img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; background: white; padding: 5px; } /* ESP32 圖片樣式 */
-        
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
-        .card { background: rgba(255, 255, 255, 0.05); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); backdrop-filter: blur(5px); display: flex; flex-direction: column; align-items: center; text-align: center; }
-        
-        .image-container { display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; width: 100%;}
-        .card img { width: 100px; height: 100px; object-fit: contain; background: white; border-radius: 8px; padding: 10px; }
-        .card h3 { margin-top: 0; color: #fff; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;}
-        
-        .data-row { display: flex; justify-content: space-between; width: 100%; margin: 10px 0; font-size: 18px; }
-        .value { font-weight: bold; color: #4ecca3; }
-        .alert { color: #ff2e63; font-weight: bold; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
-        
-        .control-area { width: 100%; margin-top: auto; padding-top: 15px;}
-        button.control-btn { width: 100%; padding: 15px; margin-top: 10px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: white; cursor: pointer; transition: 0.3s; }
-        .control-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .btn-green { background-color: #4ecca3; color: #1a1a2e !important; }
-        .btn-red { background-color: #ff2e63; }
-        .btn-yellow { background-color: #f39c12; color: #1a1a2e !important; }
+        /* =========================================
+           基本排版與黑夜模式 (Dark Mode) UI 設計
+           ========================================= */
+        body {
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        #status-msg { margin-left: 15px; color: #f39c12; font-weight: bold; font-size: 16px; }
+        .header {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #181825;
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            box-sizing: border-box;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #f38ba8; /* 粉紅色標題 */
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            background-color: #a6e3a1;
+            color: #1e1e2e;
+            font-size: 12px;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 8px;
+            vertical-align: middle;
+        }
+
+        .sync-time {
+            font-size: 14px;
+            color: #a6adc8;
+        }
+
+        /* 卡片網格排版 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background-color: #181825;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #cdd6f4;
+            border-bottom: 1px solid #313244;
+            padding-bottom: 10px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            font-size: 16px;
+        }
+
+        .data-label {
+            color: #a6adc8;
+        }
+
+        .data-value {
+            font-weight: bold;
+        }
+
+        /* 顏色狀態標籤 */
+        .status-green { color: #a6e3a1; } /* 安全/開啟 */
+        .status-red { color: #f38ba8; }   /* 危險/火警 */
+        .status-yellow { color: #f9e2af; }/* 警告/鎖定 */
+        .status-gray { color: #6c7086; }  /* 關閉 */
+
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="header-left">
-            <img src="images/ESP32.jpg" alt="ESP32 Brain" onerror="this.src='https://via.placeholder.com/70?text=ESP32'"> 
-            <h1>
-                ThingSpeak Cloud Management
-                <span id="status-msg">Connecting to Cloud...</span>
-            </h1>
-        </div>
-        <div>
-            <span>Last Sync: <strong id="last-sync">--:--:--</strong></span>
-        </div>
+        <h1>ThingSpeak Cloud Management <span class="live-badge">Live</span></h1>
+        <div class="sync-time">Last Sync: <span id="last-sync-time">--:--:--</span></div>
     </div>
 
-    <div class="dashboard">
+    <div class="dashboard-grid">
+        
         <div class="card">
-            <div class="image-container"><img src="images/DHT11.jpg" alt="DHT11 Sensor" onerror="this.style.display='none'"></div>
-            <h3>Climate</h3>
-            <div class="data-row"><span>Temperature:</span> <span class="value" id="disp-temp">-- °C</span></div>
-            <div class="data-row"><span>Humidity:</span> <span class="value" id="disp-hum">-- %</span></div>
-        </div>
-
-        <div class="card">
-            <div class="image-container"><img src="images/fan_control.jpg" alt="Fan Motor" onerror="this.style.display='none'"></div>
-            <h3>Ventilation</h3>
-            <div class="data-row"><span>Status:</span> <span class="value" id="disp-fan">--</span></div>
-            <div class="control-area">
-                <button id="btn-fan" class="control-btn btn-green" onclick="toggleFan()">Power ON Fan</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="image-container"><img src="images/RFIDcontrol.jpg" alt="RFID Sensor" onerror="this.style.display='none'"></div>
-            <h3>Access Control</h3>
-            <div class="data-row"><span>Door Status:</span> <span class="value" id="disp-door">--</span></div>
-            <div class="control-area">
-                <button id="btn-door" class="control-btn btn-yellow" onclick="toggleDoor()">Unlock Door</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="image-container"><img src="images/PIR_sensors.jpg" alt="PIR Sensor" onerror="this.style.display='none'"></div>
-            <h3>Motion Security</h3>
+            <h2>☁️ Climate</h2>
             <div class="data-row">
-                <span>Intrusion Alert:</span> 
-                <span class="value" id="disp-pir">--</span>
+                <span class="data-label">Temperature:</span>
+                <span class="data-value status-green" id="disp-temp">-- °C</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Humidity:</span>
+                <span class="data-value status-green" id="disp-hum">-- %</span>
             </div>
         </div>
 
         <div class="card">
-            <div class="image-container">
-                <img src="images/Flame_detection_with_buzzer.jpg" alt="Flame Sensor" onerror="this.style.display='none'">
-                <img src="images/LED alarms.jpg" alt="LED Alarm" onerror="this.style.display='none'">
-            </div>
-            <h3>Fire Safety</h3>
+            <h2>🚶‍♂️ Motion Security</h2>
             <div class="data-row">
-                <span>Flame Alert:</span> 
-                <span class="value" id="disp-flame">--</span>
+                <span class="data-label">Intrusion Alert:</span>
+                <span class="data-value status-green" id="disp-motion">Checking...</span>
             </div>
         </div>
+
+        <div class="card">
+            <h2>🔥 Fire Safety</h2>
+            <div class="data-row">
+                <span class="data-label">Flame Alert:</span>
+                <span class="data-value status-green" id="disp-fire">Checking...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>💨 Ventilation</h2>
+            <div class="data-row">
+                <span class="data-label">Fan Status:</span>
+                <span class="data-value status-gray" id="disp-fan">OFF</span>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // 記得檢查呢 3 個 Key 係咪你嘅專屬 Key！
-        const channelID = '3388972'; 
-        const readAPIKey = 'G7G8JZJ74H05BI5V'; 
-        const writeAPIKey = 'TBQWPYEDOIGI8BMN'; 
-
-        let currentFanStatus = 0; 
-        let currentDoorStatus = 0; 
+        // ⚠️ 已經填好你嘅 ThingSpeak Channel ID 同 Read API Key
+        const channelID = "3388972";
+        const readAPIKey = "G7G8JZJ74H05BI5V";
+        const url = `https://api.thingspeak.com/channels/${channelID}/feeds/last.json?api_key=${readAPIKey}`;
 
         async function fetchThingSpeakData() {
-            const url = `https://api.thingspeak.com/channels/${channelID}/feeds/last.json?api_key=${readAPIKey}`;
             try {
                 const response = await fetch(url);
                 const data = await response.json();
-                document.getElementById('last-sync').innerText = new Date(data.created_at).toLocaleTimeString();
-                document.getElementById('status-msg').innerText = "Live";
-                document.getElementById('status-msg').style.color = "#4ecca3";
 
-                if(data.field1) document.getElementById('disp-temp').innerText = parseFloat(data.field1).toFixed(1) + " °C";
-                if(data.field2) document.getElementById('disp-hum').innerText = parseFloat(data.field2).toFixed(1) + " %";
-                
-                document.getElementById('disp-pir').innerText = (data.field3 == 1) ? "DETECTED!" : "Clear";
-                document.getElementById('disp-pir').className = (data.field3 == 1) ? "alert" : "value";
-                
-                document.getElementById('disp-flame').innerText = (data.field4 == 1) ? "FIRE WARNING!" : "Safe";
-                document.getElementById('disp-flame').className = (data.field4 == 1) ? "alert" : "value";
+                // 1. 更新同步時間
+                const syncTime = new Date(data.created_at);
+                document.getElementById('last-sync-time').innerText = syncTime.toLocaleTimeString('zh-HK');
 
-                currentFanStatus = (data.field5 == 1) ? 1 : 0;
-                currentDoorStatus = (data.field6 == 1) ? 1 : 0;
-                updateUI();
-            } catch (e) { 
-                document.getElementById('status-msg').innerText = "Sync Failed"; 
-                document.getElementById('status-msg').style.color = "#ff2e63";
+                // 2. 溫濕度 (Field 1 & 2)
+                if (data.field1) document.getElementById('disp-temp').innerText = parseFloat(data.field1).toFixed(1) + ' °C';
+                if (data.field2) document.getElementById('disp-hum').innerText = parseFloat(data.field2).toFixed(1) + ' %';
+
+                // ==========================================
+                // 3. 🚨 終極修正：火警狀態 (Field 3)
+                // ==========================================
+                const fireEl = document.getElementById('disp-fire');
+                if (data.field3 == "1") {
+                    fireEl.innerText = "FIRE WARNING!";
+                    fireEl.className = "data-value status-red"; // 變紅色
+                } else {
+                    fireEl.innerText = "Safe";
+                    fireEl.className = "data-value status-green"; // 變綠色
+                }
+
+                // ==========================================
+                // 4. 🚨 終極修正：防盜感應 (Field 4)
+                // ==========================================
+                const motionEl = document.getElementById('disp-motion');
+                if (data.field4 == "1") {
+                    motionEl.innerText = "Detected!";
+                    motionEl.className = "data-value status-red"; // 變紅色
+                } else {
+                    motionEl.innerText = "Clear";
+                    motionEl.className = "data-value status-green"; // 變綠色
+                }
+
+                // 5. 風扇狀態 (Field 7)
+                const fanEl = document.getElementById('disp-fan');
+                const fanSpeed = parseInt(data.field7);
+                if (fanSpeed > 0) {
+                    fanEl.innerText = `ON (${fanSpeed}%)`;
+                    fanEl.className = "data-value status-green";
+                } else {
+                    fanEl.innerText = "OFF";
+                    fanEl.className = "data-value status-gray";
+                }
+
+            } catch (error) {
+                console.error("無法連線至 ThingSpeak:", error);
+                document.getElementById('last-sync-time').innerText = "連線失敗";
             }
         }
 
-        async function sendCommand(field, value) {
-            const url = `https://api.thingspeak.com/update?api_key=${writeAPIKey}&field${field}=${value}`;
-            await fetch(url, { method: 'POST' });
-            fetchThingSpeakData(); // 立即刷新
-        }
-
-        function toggleFan() {
-            document.getElementById('btn-fan').innerText = "Sending...";
-            document.getElementById('btn-fan').disabled = true;
-            sendCommand(5, (currentFanStatus == 0) ? 1 : 0).finally(() => { document.getElementById('btn-fan').disabled = false; }); 
-        }
-        function toggleDoor() { 
-            document.getElementById('btn-door').innerText = "Sending...";
-            document.getElementById('btn-door').disabled = true;
-            sendCommand(6, (currentDoorStatus == 0) ? 1 : 0).finally(() => { document.getElementById('btn-door').disabled = false; }); 
-        }
-
-        function updateUI() {
-            const fanBtn = document.getElementById('btn-fan');
-            fanBtn.innerText = (currentFanStatus == 1) ? "Power OFF Fan" : "Power ON Fan";
-            fanBtn.className = (currentFanStatus == 1) ? "control-btn btn-red" : "control-btn btn-green";
-            document.getElementById('disp-fan').innerText = (currentFanStatus == 1) ? "ON" : "OFF";
-
-            const doorBtn = document.getElementById('btn-door');
-            doorBtn.innerText = (currentDoorStatus == 1) ? "Lock Door" : "Unlock Door";
-            doorBtn.className = (currentDoorStatus == 1) ? "control-btn btn-red" : "control-btn btn-yellow";
-            document.getElementById('disp-door').innerText = (currentDoorStatus == 1) ? "Unlocked" : "Locked";
-            document.getElementById('disp-door').style.color = (currentDoorStatus == 1) ? "#4ecca3" : "#f39c12";
-        }
-
-        setInterval(fetchThingSpeakData, 5000);
+        // 網頁一打開即刻執行一次
         fetchThingSpeakData();
+
+        // 之後每 15 秒自動刷新一次 (配合 ThingSpeak 免費版限制)
+        setInterval(fetchThingSpeakData, 15000);
     </script>
 </body>
 </html>
